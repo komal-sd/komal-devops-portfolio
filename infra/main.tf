@@ -19,7 +19,7 @@ module "networking" {
 # ═══════════════════════════════════════════
 # Database
 # ═══════════════════════════════════════════
-module "datbase" {
+module "database" {
   source = "./modules/database"
 
   vpc_id = module.networking.vpc_id
@@ -59,4 +59,37 @@ module "alb" {
   project_name          = var.project_name
   environment           = var.environment
   frontend_port         = var.frontend_port
+}
+# -------------------------------------------
+# ECS
+# -------------------------------------------
+module "ecs" {
+  source = "./modules/ecs"
+
+  project_name = var.project_name
+  environment  = var.environment
+  aws_region   = var.aws_region
+
+  private_subnet_ids         = module.networking.private_subnet_ids
+  vpc_id                     = module.networking.vpc_id
+  frontend_security_group_id = module.security_groups.ecs_frontend_security_group_id
+  backend_security_group_id  = module.security_groups.ecs_backend_security_group_id
+  target_group_arn           = module.alb.target_group_arn
+
+  db_endpoint  = module.database.db_endpoint
+  db_name      = var.db_name
+  db_username  = var.db_username
+  db_password  = var.db_password
+
+  backend_port    = var.backend_port
+  frontend_port   = var.frontend_port
+  backend_cpu     = var.backend_cpu
+  backend_memory  = var.backend_memory
+  frontend_cpu    = var.frontend_cpu
+  frontend_memory = var.frontend_memory
+
+  backend_image  = "nginx"
+  frontend_image = "nginx"
+
+  ecs_services = local.ecs_services
 }
