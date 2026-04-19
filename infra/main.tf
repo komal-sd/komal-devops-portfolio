@@ -47,3 +47,16 @@ module "security_groups" {
   frontend_port = var.frontend_port
   db_port      = var.db_port
 }
+# -------------------------------------------
+# ALB
+# -------------------------------------------
+module "alb" {
+  source = "./modules/alb"
+
+  vpc_id                = module.networking.vpc_id
+  public_subnet_ids     = module.networking.public_subnet_ids
+  alb_security_group_id = module.security_groups.alb_security_group_id
+  project_name          = var.project_name
+  environment           = var.environment
+  frontend_port         = var.frontend_port
+}
