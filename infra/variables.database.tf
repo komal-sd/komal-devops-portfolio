@@ -15,3 +15,8 @@ variable "db_port" {
   description = "Database port number"
   type        = number
 }
+variable "db_password" {
+  description = "Database master password"
+  type        = string
+  sensitive   = true
+}
