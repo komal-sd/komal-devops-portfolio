@@ -93,3 +93,16 @@ module "ecs" {
 
   ecs_services = local.ecs_services
 }
+# -------------------------------------------
+# SECRETS
+# -------------------------------------------
+module "secrets" {
+  source = "./modules/secrets"
+
+  project_name = var.project_name
+  environment  = var.environment
+  db_username  = var.db_username
+  db_password  = var.db_password
+  db_endpoint  = module.database.db_endpoint
+  db_name      = var.db_name
+}
