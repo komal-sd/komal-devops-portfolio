@@ -1,0 +1,105 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches:
+      - main
+
+
+env:
+  AWS_REGION: ap-south-1
+  ECR_REGISTRY: 724840299458.dkr.ecr.ap-south-1.amazonaws.com
+
+jobs:
+  build:
+    name: Build and Push
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        service:
+          - name: backend
+            context: ./app
+            image: komal-portfolio-dev-backend
+          - name: frontend
+            context: ./frontend
+            image: komal-portfolio-dev-frontend
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region:            ${{ env.AWS_REGION }}
+
+      - name: Login to ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Build and push image
+        env:
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -t $ECR_REGISTRY/${{ matrix.service.image }}:$IMAGE_TAG \
+            ${{ matrix.service.context }}
+          docker push $ECR_REGISTRY/${{ matrix.service.image }}:$IMAGE_TAG
+          echo "image=$ECR_REGISTRY/${{ matrix.service.image }}:$IMAGE_TAG" >> $GITHUB_OUTPUT    
+
+
+
+  deploy:
+    name: Deploy to ECS
+    runs-on: ubuntu-latest
+    needs: build
+
+    strategy:
+      matrix:
+        service:
+          - name: backend
+            image: komal-portfolio-dev-backend
+            container: backend
+            task_definition: komal-portfolio-dev-backend
+            ecs_service: komal-portfolio-dev-backend
+          - name: frontend
+            image: komal-portfolio-dev-frontend
+            container: frontend
+            task_definition: komal-portfolio-dev-frontend
+            ecs_service: komal-portfolio-dev-frontend
+
+    env:
+      ECS_CLUSTER: komal-portfolio-dev-cluster
+
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region:            ${{ env.AWS_REGION }}
+
+      - name: Download task definition
+        run: |
+          aws ecs describe-task-definition \
+            --task-definition ${{ matrix.service.task_definition }} \
+            --query taskDefinition \
+            > task-definition.json
+
+      - name: Update image in task definition
+        id: task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task-definition.json
+          container-name:  ${{ matrix.service.container }}
+          image:           ${{ env.ECR_REGISTRY }}/${{ matrix.service.image }}:${{ github.sha }}
+
+      - name: Deploy to ECS
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          task-definition: ${{ steps.task-def.outputs.task-definition }}
+          service:         ${{ matrix.service.ecs_service }}
+          cluster:         ${{ env.ECS_CLUSTER }}
+          wait-for-service-stability: true
