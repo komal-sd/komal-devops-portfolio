@@ -2,7 +2,7 @@ import os
 
 class Config:
     # Database
-    DB_HOST     = os.environ.get('DB_HOST', 'localhost')
+    DB_HOST     = os.environ.get('DB_HOST', 'localhost').spilt(':')[0]
     DB_NAME     = os.environ.get('DB_NAME', 'portfolio')
     DB_USER     = os.environ.get('DB_USER', 'postgres')
     DB_PASSWORD = os.environ.get('DB_PASSWORD', 'postgres')
