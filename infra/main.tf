@@ -88,8 +88,8 @@ module "ecs" {
   frontend_cpu    = var.frontend_cpu
   frontend_memory = var.frontend_memory
 
-  backend_image  = "nginx"
-  frontend_image = "nginx"
+  backend_image  = "724840299458.dkr.ecr.ap-south-1.amazonaws.com/komal-portfolio-dev-backend"
+  frontend_image = "724840299458.dkr.ecr.ap-south-1.amazonaws.com/komal-portfolio-dev-frontend"
 
   ecs_services = local.ecs_services
 }

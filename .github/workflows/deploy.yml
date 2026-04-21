@@ -5,7 +5,6 @@ on:
     branches:
       - main
 
-
 env:
   AWS_REGION: ap-south-1
   ECR_REGISTRY: 724840299458.dkr.ecr.ap-south-1.amazonaws.com
@@ -32,7 +31,7 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region:            ${{ env.AWS_REGION }}
 
@@ -44,12 +43,12 @@ jobs:
         env:
           IMAGE_TAG: ${{ github.sha }}
         run: |
-          docker build -t $ECR_REGISTRY/${{ matrix.service.image }}:$IMAGE_TAG \
+          docker build \
+            -t $ECR_REGISTRY/${{ matrix.service.image }}:$IMAGE_TAG \
+            -t $ECR_REGISTRY/${{ matrix.service.image }}:latest \
             ${{ matrix.service.context }}
           docker push $ECR_REGISTRY/${{ matrix.service.image }}:$IMAGE_TAG
-          echo "image=$ECR_REGISTRY/${{ matrix.service.image }}:$IMAGE_TAG" >> $GITHUB_OUTPUT    
-
-
+          docker push $ECR_REGISTRY/${{ matrix.service.image }}:latest
 
   deploy:
     name: Deploy to ECS
@@ -75,7 +74,7 @@ jobs:
 
     steps:
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v2
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
